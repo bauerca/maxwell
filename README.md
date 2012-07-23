@@ -1,4 +1,4 @@
 maxwell
 =======
 
-Eigensolver for Maxwell's equations
+Distributed-memory parallel eigensolver for Maxwell's equations.
