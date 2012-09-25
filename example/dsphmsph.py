@@ -15,6 +15,16 @@ rtEpsOut = math.sqrt(epsOut)
 a = 0.37
 b = 0.49
 
+def setProblem(mEpsIn, mEpsOut, mA, mB):
+  global a, b, epsIn, epsOut, rtEpsIn, rtEpsOut
+  a = mA
+  b = mB
+  epsIn = mEpsIn
+  epsOut = mEpsOut
+  rtEpsIn = math.sqrt(epsIn)
+  rtEpsOut = math.sqrt(epsOut)
+
+
 def factorial(n):
   res = 1
   for i in range(1, n + 1):
@@ -229,6 +239,7 @@ def octModes(lbcs, num):
   # of modes in the range (only for lowest l number, though)
 
   krange = float(num) * math.pi / max([rtEpsIn, rtEpsOut]) / b
+  kstep = krange / float(num * 100)
 
   names = []
   ks = []
@@ -236,7 +247,7 @@ def octModes(lbcs, num):
   k1 = 0.0
   k2 = krange
   while len(names) < num:
-    tnames, tks = _kInRange(k1, k2)
+    tnames, tks = _kInRange(k1, k2, kstep)
     for tname, tk in zip(tnames, tks):
       pol = tname.split("-")[0]
       n = int(tname.split("-")[1])
@@ -374,6 +385,8 @@ def efieldTM(l, m, k, pts, kind = "re"):
   else:
     realXlm = -1.0j * (Xlm(l, m, pts) - (-1.0)**m * Xlm(l, -m, pts))
     realCurlXlm = -1.0j * (curlXlm(l, m, pts) - (-1)**m * curlXlm(l, -m, pts))
+    realXlm = realXlm.real
+    realCurlXlm = realCurlXlm.real
 
   res = numpy.zeros(r.shape + (3, ), dtype = 'd')
 
@@ -575,8 +588,9 @@ def strToMode(str):
 
 def modeToVtk(resolution, modename, pathToH5Utils = ""):
   import tables
+  global b
 
-  delta = 0.5 / float(resolution)
+  delta = b / float(resolution)
 
   ex = numpy.zeros(3 * (resolution, ), dtype = 'd')
   ey = numpy.zeros(3 * (resolution, ), dtype = 'd')
@@ -593,7 +607,7 @@ def modeToVtk(resolution, modename, pathToH5Utils = ""):
   h5y = tables.openFile(fy, 'w')
   h5z = tables.openFile(fz, 'w')
 
-  pts = numpy.mgrid[0:0.5:delta, 0:0.5:delta, 0:0.5:delta]
+  pts = numpy.mgrid[0:b:delta, 0:b:delta, 0:b:delta]
   pts = numpy.rollaxis(pts, 0, pts.ndim)
   field = efield(pol, n, l, m, phase, pts)
 
@@ -608,6 +622,98 @@ def modeToVtk(resolution, modename, pathToH5Utils = ""):
   #os.system("rm " + fx)
   #os.system("rm " + fy)
   #os.system("rm " + fz)
+
+
+def getShellPoints(r, thetaRes, dx=0.0):
+  """
+  Get a set of points on a shell just outside of inner dielectric sphere
+    r:           radius of shell
+    thetaRes:    resolution in the theta direction from 0 to pi/2 (dPhi = dTheta)
+    dx : resolution of simulation (avoids pts near domain boundaries
+         to ease interpolation) (dx = dy = dz assumed)
+  """
+  dTheta = 0.5 * math.pi / float(thetaRes)
+  maxDx = (1. + 1.e-8) * dx
+  thetaMin = math.asin(maxDx / r / math.sqrt(2.0))
+  thetaMax = math.acos(0.5 * maxDx / r)
+  points = []
+  for theta in numpy.arange(thetaMin, thetaMax, dTheta):
+    sinTh = math.sin(theta)
+    phiMin = math.asin(0.5 * maxDx / (r * sinTh))
+    phiMax = math.acos(0.5 * maxDx / (r * sinTh))
+    for phi in numpy.arange(phiMin, phiMax, dTheta / sinTh):
+      points.append([r * math.sin(theta) * math.cos(phi),
+                     r * math.sin(theta) * math.sin(phi),
+                     r * math.cos(theta)])
+  return points
+
+
+def getVolumePointsHelper(rRes, dx=0.0, pad=3.0):
+  """Gets points over entire volume. Avoids domain boundaries and
+  material boundaries (for dielectric and metal)
+  
+  rRes : number of shells from origin to PEC boundary (approx)
+  dx : resolution of simulation (avoids pts near domain boundaries
+       to ease interpolation)
+  pad : min distance of any point to material boundary (in units of
+        provided dx)
+  """
+
+  # when every resolution has the same bndry buffer
+  maxDx = (1. + 1.e-8) * dx
+  dr = pecRad / float(rRes)
+
+  # shell distances inside dielectric
+  rmin = 0.5 * math.sqrt(3.0) * maxDx
+  rmax = epsRad - pad * maxDx
+  ptsIn = getVolumePoints(int((rmax-rmin)/dr), rmax, rmin, dx)
+
+  # shell distances outside dielectric
+  rmin = epsRad + pad * maxDx
+  rmax = pecRad - pad * maxDx
+  ptsOut = getVolumePoints(int((rmax-rmin)/dr), rmax, rmin, dx)
+
+  return numpy.concatenate([ptsIn, ptsOut])
+
+
+def getVolumePoints(rRes, rmax, rmin=0.0, dx=0.0):
+  """
+  Get a set of points for calculating volume norms. Points are restricted to the following
+  sub-volumes: first, points must lie a distance 0.5dx away from all simulation domain
+  boundaries, so that an interpolation doesn't try to use values outside the domain (Yee
+  setup making life difficult again); second, points must lie far enough away from material
+  boundaries, so that complicated interpolations are not required.
+
+  rRes : shells between rmin and rmax
+  rmax : max shell radius
+  rmin : min shell radius
+  dx : resolution of simulation (avoids pts near domain boundaries
+       to ease interpolation)
+
+  """
+
+  maxDx = (1. + 1.e-8) * dx
+  rmin = max(rmin, 0.5 * math.sqrt(3.0) * maxDx)
+  rs = numpy.linspace(rmin, rmax, rRes)
+  dr = rs[1] - rs[0]
+
+  points = []
+  for r in rs:
+    dTheta = math.acos(1.0 - 0.5 * (dr / r)**2)
+    thetaMin = math.asin(maxDx / r / math.sqrt(2.0))
+    thetaMax = math.acos(0.5 * maxDx / r)
+    for theta in numpy.arange(thetaMin, thetaMax, dTheta):
+      sinTh = math.sin(theta)
+      dPhi = dTheta / sinTh
+      phiMin = math.asin(0.5 * maxDx / (r * sinTh))
+      phiMax = math.acos(0.5 * maxDx / (r * sinTh))
+      for phi in numpy.arange(phiMin, phiMax, dPhi):
+        points.append([r * math.sin(theta) * math.cos(phi),
+                       r * math.sin(theta) * math.sin(phi),
+                       r * math.cos(theta)])
+  return points
+
+
 
 
 if __name__ == "__main__":

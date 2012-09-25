@@ -144,7 +144,7 @@ pid(theComm->myPID()) {
 
   if (sim->hasPEC()) {
     std::cout << "Saving PEC shape function...\n";
-    shapes[pecShapeIndx]->save(sim->getGrid(), "pec");
+    //shapes[pecShapeIndx]->save(sim->getGrid(), "pec");
 
 #if 0
     MxShape<DIM> * sh;
@@ -298,7 +298,7 @@ size_t MxProblem<DIM>::getShape(const Teuchos::XMLObject & node) {
     size_t indx;
     for (int i = 0; i < node.numChildren(); ++i) {
       indx = getShape(node.getChild(i));
-      tmp->add(shapes[indx]);
+      if (indx != size_t(-1)) tmp->add(shapes[indx]);
     }
     shape = tmp;
     shape->transforms(node);
@@ -308,7 +308,7 @@ size_t MxProblem<DIM>::getShape(const Teuchos::XMLObject & node) {
     size_t indx;
     for (int i = 0; i < node.numChildren(); ++i) {
       indx = getShape(node.getChild(i));
-      tmp->add(shapes[indx]);
+      if (indx != size_t(-1)) tmp->add(shapes[indx]);
     }
     shape = tmp;
     shape->transforms(node);

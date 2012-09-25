@@ -25,7 +25,24 @@ double MxSegment<DIM>::volumeFraction(const MxShape<DIM> & aShape, const MxDimVe
   MxDimVector<double, DIM> p2(midPt - 0.5 * len * dir);
   double f1 = aShape.func(p1);
   double f2 = aShape.func(p2);
+  int f1s = MxUtil::sign(f1);
+  int f2s = MxUtil::sign(f2);
 
+  if ((f1s == 1 and f2s != -1) or (f2s == 1 and f1s != -1)) {
+    return 1;
+  } else if ((f1s == -1 and f2s != 1) or (f2s == -1 and f1s != 1)) {
+    return 0;
+  } else if (f1s == 0 and f2s == 0) {
+    return MxUtil::sign(aShape.func(midPt)) == 1 ? 1 : 0;
+  } else {                                                                         // bracketing
+    MxDimVector<double, DIM> p(MxUtil::rootFind<MxShape<DIM>, DIM>(aShape, p1, p2, 1.e-12, 20));
+    if (f1s == 1)
+      return (p - p1).norm() / len;
+    else
+      return (p - p2).norm() / len;
+  }
+
+#if 0
   if      ((f1 > MxUtil::dEps and f2 > -MxUtil::dEps) or 
            (f2 > MxUtil::dEps and f1 > -MxUtil::dEps)) return 1.0;     // one in, other in or on
   else if ((f1 < -MxUtil::dEps and f2 < MxUtil::dEps) or
@@ -41,6 +58,7 @@ double MxSegment<DIM>::volumeFraction(const MxShape<DIM> & aShape, const MxDimVe
     else
       return (p - p2).norm() / len;
   }
+#endif
 
 #if 0
   if (f1 * f2 > 0.0) {
@@ -76,7 +94,8 @@ const std::vector<double> & fVals,
 const std::vector<size_t> & edgeXInds,
 const std::vector<MxDimVector<double, DIM> *> & edgeX) const {
 
-  if (fVals[0] > MxUtil::dEps)
+  //if (fVals[0] > MxUtil::dEps)
+  if (MxUtil::sign(fVals[0]) == 1)
     return (*edgeX[0] - verts[0]).norm() / len;
   else
     return (*edgeX[0] - verts[1]).norm() / len;

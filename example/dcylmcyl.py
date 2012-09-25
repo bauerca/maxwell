@@ -13,6 +13,15 @@ rtEpsOut = math.sqrt(epsOut)
 a = 0.37
 b = 0.49
 
+def setProblem(mEpsIn, mEpsOut, mA, mB):
+  global a, b, epsIn, epsOut, rtEpsIn, rtEpsOut
+  a = mA
+  b = mB
+  epsIn = mEpsIn
+  epsOut = mEpsOut
+  rtEpsIn = math.sqrt(epsIn)
+  rtEpsOut = math.sqrt(epsOut)
+
 lightspeed = 299792458.
 
 def factorial(n):
@@ -408,15 +417,16 @@ def modeToStr(pol, m, n, phase):
 
 def modeToVtk(resolution, modename, pathToH5Utils = ""):
   import tables
+  global b
 
-  delta = 0.5 / float(resolution)
+  delta = b / float(resolution)
 
-  ex = numpy.zeros(3 * (resolution, ), dtype = 'd')
-  ey = numpy.zeros(3 * (resolution, ), dtype = 'd')
-  ez = numpy.zeros(3 * (resolution, ), dtype = 'd')
+  ex = numpy.zeros(2 * (resolution, ) + (1,), dtype = 'd')
+  ey = numpy.zeros(2 * (resolution, ) + (1,), dtype = 'd')
+  ez = numpy.zeros(2 * (resolution, ) + (1,), dtype = 'd')
 
-  pol, n, l, m, phase = strToMode(modename)
-  print "Saving %s%d%d%d%s field" % (pol, n, l, m, phase)
+  pol, m, n, phase = strToMode(modename)
+  print "Saving %s%d%d%s field" % (pol, m, n, phase)
   #print "Saving TM%d%d%d field" % (n, l, m)
   fx = "elecField_" + modename + "_x.h5"
   fy = "elecField_" + modename + "_y.h5"
@@ -425,29 +435,108 @@ def modeToVtk(resolution, modename, pathToH5Utils = ""):
   h5x = tables.openFile(fx, 'w')
   h5y = tables.openFile(fy, 'w')
   h5z = tables.openFile(fz, 'w')
-  x = 0.0
-  for ix in range(resolution):
-    y = 0.0
-    for iy in range(resolution):
-      z = 0.0
-      for iz in range(resolution):
-        # do stuff
-        ex[ix, iy, iz], ey[ix, iy, iz], ez[ix, iy, iz] = efield(pol, n, l, m, phase, [x, y, z])
-        z += delta
-      y += delta
-    x += delta
-  h5x.createArray("/", "data", ex)
-  h5y.createArray("/", "data", ey)
-  h5z.createArray("/", "data", ez)
+
+  pts = numpy.mgrid[0:b:delta, 0:b:delta, 0:1:1]
+  pts = numpy.rollaxis(pts, 0, pts.ndim)
+  field = efield(pol, m, n, phase, pts)
+
+  #x = 0.0
+  #for ix in range(resolution):
+  #  y = 0.0
+  #  for iy in range(resolution):
+  #    z = 0.0
+  #    for iz in range(resolution):
+  #      # do stuff
+  #      ex[ix, iy, iz], ey[ix, iy, iz], ez[ix, iy, iz] = efield(pol, n, l, m, phase, [x, y, z])
+  #      z += delta
+  #    y += delta
+  #  x += delta
+
+  h5x.createArray("/", "data", field[...,0])
+  h5y.createArray("/", "data", field[...,1])
+  h5z.createArray("/", "data", field[...,2])
   h5x.close()
   h5y.close()
   h5z.close()
   # now use h5tovtk to get vtk file
   os.system(pathToH5Utils + "h5tovtk -o %s %s %s %s" % (fvtk, fx, fy, fz))
-  os.system("rm " + fx)
-  os.system("rm " + fy)
-  os.system("rm " + fz)
+  #os.system("rm " + fx)
+  #os.system("rm " + fy)
+  #os.system("rm " + fz)
 
+def getRingPoints(r, phiRes, dx=0.0):
+  """
+  Get a set of points on a ring at radius r
+    r:           radius of ring
+    phiRes:    resolution in the phi direction from 0 to pi/2
+    dx : resolution of simulation (avoids pts near domain boundaries
+         to ease interpolation) (dx = dy assumed)
+  """
+  maxDx = (1. + 1.e-8) * dx
+  phiMin = math.asin(0.5 * maxDx / r)
+  phiMax = math.acos(0.5 * maxDx / r)
+  print phiMin, phiMax
+  points = []
+  for phi in numpy.linspace(phiMin, phiMax, phiRes):
+    points.append([r * math.cos(phi), r * math.sin(phi), 0.0])
+  return points
+
+
+def getAreaPointsHelper(rRes, dx=0.0, pad=3.0):
+  """Gets points over entire area. Avoids domain boundaries and
+  material boundaries (for dielectric and metal)
+  
+  rRes : number of rings from origin to PEC boundary (approx)
+  dx : resolution of simulation (avoids pts near domain boundaries
+       to ease interpolation)
+  pad : min distance of any point to material boundary (in units of
+        provided dx)
+  """
+
+  # when every resolution has the same bndry buffer
+  maxDx = (1. + 1.e-8) * dx
+  dr = pecRad / float(rRes)
+
+  # shell distances inside dielectric
+  rmin = 0.5 * math.sqrt(2.0) * maxDx
+  rmax = epsRad - pad * maxDx
+  ptsIn = getVolumePoints(int((rmax-rmin)/dr), rmax, rmin, dx)
+
+  # shell distances outside dielectric
+  rmin = epsRad + pad * maxDx
+  rmax = pecRad - pad * maxDx
+  ptsOut = getVolumePoints(int((rmax-rmin)/dr), rmax, rmin, dx)
+
+  return numpy.concatenate([ptsIn, ptsOut])
+
+
+def getAreaPoints(rRes, rmax, rmin=0.0, dx=0.0):
+  """
+  Get a set of points for calculating area norms. Points are restricted to the following
+  sub-area: first, points must lie a distance 0.5dx away from all simulation domain
+  boundaries, so that an interpolation doesn't try to use values outside the domain (Yee
+  setup making life difficult again); second, points must lie far enough away from material
+  boundaries, so that complicated interpolations are not required.
+
+  rRes : rings between rmin and rmax
+  rmax : max ring radius
+  rmin : min ring radius
+  dx : resolution of simulation (avoids pts near domain boundaries
+       to ease interpolation)
+
+  """
+
+  maxDx = (1. + 1.e-8) * dx
+  rmin = max(rmin, 0.5 * math.sqrt(3.0) * maxDx)
+  rs = numpy.linspace(rmin, rmax, rRes)
+  dr = rs[1] - rs[0]
+
+  points = []
+  for r in rs:
+    dPhi = math.acos(1.0 - 0.5*(dr/r)**2)
+    points += getRingPoints(r, int(0.5*math.pi/dPhi), dx=dx)
+
+  return points
 
 if __name__ == "__main__":
 

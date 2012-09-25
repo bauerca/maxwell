@@ -22,7 +22,8 @@ namespace MxUtil {
 
 const double pi = 3.14159265358979323846;
 const double lightspeed = 299792458.;
-const double dEps = std::numeric_limits<double>::epsilon();
+//const double dEps = std::numeric_limits<double>::epsilon();
+const double dEps = 0.0;
 
 template<typename T1, typename T2>
 T1 toScalar(T2 val);
@@ -38,6 +39,13 @@ template<>
 inline
 std::complex<double> i<std::complex<double> >() {
   return std::complex<double>(0.0, 1.0);
+}
+
+inline
+int sign(double val) {
+  if (val < -dEps) return -1;
+  else if (val < dEps) return 0;
+  else return 1;
 }
 
 

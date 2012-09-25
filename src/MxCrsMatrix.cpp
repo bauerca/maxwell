@@ -80,6 +80,42 @@ void MxCrsMatrix<Scalar>::initBaseMatrix() {
 #endif
 }
 
+template<typename Scalar>
+void MxCrsMatrix<Scalar>::purgeZeros() {
+#if LINALG_BASE == TPETRA
+}
+#elif LINALG_BASE == EPETRA
+  if (!mMatrix->Filled()) {
+    std::cout << "MxCrsMatrix::purgeZeros: input matrix has to be FillCompleted.";
+    throw 1;
+  }
+
+  //Epetra_Map dMap(m.DomainMap()), rMap(m.RangeMap());
+
+  RCP<Epetra_CrsMatrix> copy(new Epetra_CrsMatrix(Copy,
+    mMatrix->RowMap(), mMatrix->ColMap(), 0));
+
+  //std::cout << "Global inds m?: " << m.IndicesAreGlobal() << "\n";
+  //std::cout << "Global inds copy?: " << copy.IndicesAreGlobal() << "\n";
+
+  //strip zeros from resulting matrix (why doesn't Trilinos do this?) to conserve space
+  int numRowInds = mMatrix->RowMap().NumMyElements();
+  int numEntries;
+  int * indices;
+  double * values;
+  for (int i = 0; i < numRowInds; i++) {
+    mMatrix->ExtractMyRowView(i, numEntries, values, indices);
+    for (int j = 0; j < numEntries; j++) {
+      if (fabs(values[j]) > 1.e-12)
+        copy->InsertMyValues(i, 1, &values[j], &indices[j]);
+    }
+  }
+  copy->FillComplete(mMatrix->DomainMap(), mMatrix->RangeMap());
+
+  mMatrix = copy;
+}
+#endif
+
 
 #if LINALG_BASE == TPETRA
 template<typename Scalar>

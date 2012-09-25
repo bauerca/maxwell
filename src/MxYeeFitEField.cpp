@@ -5,7 +5,8 @@
 
 template<size_t DIM>
 MxYeeFitEField<DIM>::MxYeeFitEField(const MxGrid<DIM> * aGrid,
-MxPolType polarization) {
+const MxYeeFitBField<DIM> * bfield,
+MxPolType polarization) : mBfield(bfield) {
 //lBCs(PERIODIC), uBCs(PERIODIC),
 //useLowerComps(true), useUpperComps(false), 
 //gridRes(aGrid->getResolution()), phaseShifts(0.0) {
@@ -46,6 +47,54 @@ MxPolType polarization) {
     this->compPtopes.push_back(Teuchos::rcp(new MxCartSeg<DIM>('z', dz)));
   }
 
+}
+
+template<size_t DIM>
+bool MxYeeFitEField<DIM>::useCompInMap(size_t comp,
+MxDimVector<int, DIM> cell) const {
+
+  bool res = MxYeeElecFieldBase<DIM>::useCompInMap(comp, cell);
+  if (res == false) return res;
+
+  if (DIM == 3 or (DIM == 2 and this->pol == TM)) {
+    size_t comp2, comp3;
+    if (DIM == 3) {
+      comp2 = (comp + 1) % 3;
+      comp3 = (comp + 2) % 3;
+    } else {
+      comp2 = 0;
+      comp3 = 1;
+    }
+
+    if (!mBfield->useCompInMap(comp2, cell)) return false;
+    cell[comp3]--;
+    if (!mBfield->useCompInMap(comp2, cell)) return false;
+    cell[comp3]++;
+
+    if (!mBfield->useCompInMap(comp3, cell)) return false;
+    cell[comp2]--;
+    if (!mBfield->useCompInMap(comp3, cell)) return false;
+    cell[comp2]++;
+  } else if (DIM == 2) {
+    size_t comp2 = (comp + 1) % 2;
+
+    if (!mBfield->useCompInMap(0, cell)) return false;
+    cell[comp2]--;
+    if (!mBfield->useCompInMap(0, cell)) return false;
+    cell[comp2]++;
+  }
+
+  return true;
+}
+
+template<size_t DIM>
+MxComplex MxYeeFitEField<DIM>::getCompFactor(size_t comp,
+MxDimVector<int, DIM> cell) const {
+
+  MxComplex res = MxYeeElecFieldBase<DIM>::getCompFactor(comp, cell);
+
+  if (!this->useCompInMap(comp, cell)) return 0.0;
+  else return res;
 }
 
 

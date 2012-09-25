@@ -13,6 +13,7 @@
 #include "MxGrid.h"
 #include "MxTypes.h"
 #include "MxYeeElecFieldBase.h"
+#include "MxYeeFitBField.h"
 
 #include "Teuchos_ParameterList.hpp"
 
@@ -24,11 +25,16 @@ template<size_t DIM>
 class MxYeeFitEField : public MxYeeElecFieldBase<DIM> {
   public:
     // needs bfield for Dey Mittra
-    MxYeeFitEField(const MxGrid<DIM> * aGrid, MxPolType polarization = TE);
+    MxYeeFitEField(const MxGrid<DIM> * aGrid, const MxYeeFitBField<DIM> * bfield,
+        MxPolType polarization = TE);
 
     virtual const MxPolytope<DIM> & getCompPolytope(size_t comp) const {
       return *this->compPtopes[comp];
     }
+
+    virtual bool useCompInMap(size_t comp, MxDimVector<int, DIM> cell) const;
+
+    virtual MxComplex getCompFactor(size_t comp, MxDimVector<int, DIM> cell) const;
 
     //void setBCs(Teuchos::ParameterList theBCList);
 
@@ -47,6 +53,9 @@ class MxYeeFitEField : public MxYeeElecFieldBase<DIM> {
 
     friend class MxGridFieldIter<DIM>;
 
+  private:
+    
+    const MxYeeFitBField<DIM> * mBfield;
 
 #if 0
   private:

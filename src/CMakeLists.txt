@@ -178,3 +178,6 @@ add_dependencies(maxwell MxHDF5 MxTrilinos)
 #target_link_libraries(maxwell ${Trilinos_LIBRARIES} hdf5 blas lapack z m)
 target_link_libraries(maxwell mxwll
   ${MAXWELL_EXTPROJ_LINK_LIBS} blas lapack z m)
+
+
+install(TARGETS maxwell RUNTIME DESTINATION bin)

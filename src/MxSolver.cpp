@@ -9,8 +9,11 @@
 #include "MxMagWaveOp.h"
 #include "MxIO.h"
 #include "MxAnasaziMV.hpp"
+#include "AnasaziBlockKrylovSchurSolMgr.hpp"
+#include "AnasaziBlockDavidsonSolMgr.hpp"
 
 #include "Epetra_Comm.h"
+#include "Epetra_Time.h"
 #include "Epetra_MultiVector.h"
 #include "Epetra_Operator.h"
 
@@ -21,6 +24,7 @@ myPID(aSim->getGrid().getComm()->myPID()), sim(aSim), pList(aPList) {
   MxMagWaveOp<DIM, Scalar> * mwOp = new MxMagWaveOp<DIM, Scalar>(sim);
   op = rcp(mwOp);
 
+  std::string type = pList.get("eigensolver : type", "krylov-schur");
   int blockSize = pList.get("eigensolver : block size", 1);
   if (pList.get("is complex", false))
     blockSize *= 2;
@@ -45,6 +49,7 @@ myPID(aSim->getGrid().getComm()->myPID()), sim(aSim), pList(aPList) {
 
   std::cout << anasaziPList;
 
+
   // epetra interface...
 #if 0
   mInitVec = rcp(new Epetra_MultiVector(op->OperatorDomainMap(), blockSize));
@@ -63,8 +68,9 @@ myPID(aSim->getGrid().getComm()->myPID()), sim(aSim), pList(aPList) {
 #endif
 
   mEigProb->setNEV(nev);
-  //if (!sim->hasDielectric())
-    //mEigProb->setHermitian(true);
+  if (!sim->hasDielectric() and !sim->hasMu())
+    mEigProb->setHermitian(true);
+
   //mEigProb->setAuxVecs(uniFields);
 
   bool boolret = mEigProb->setProblem();
@@ -75,19 +81,36 @@ myPID(aSim->getGrid().getComm()->myPID()), sim(aSim), pList(aPList) {
     }
   }
 
-  mEigMgr = rcp(new Anasazi::BlockKrylovSchurSolMgr<Scalar, MV, OP>(mEigProb, anasaziPList));
+  if (type == "krylov-schur") {
+    mEigMgr = rcp(new Anasazi::BlockKrylovSchurSolMgr<Scalar, MV, OP>(mEigProb, anasaziPList));
+  } else if (type == "davidson") {
+    anasaziPList.set("Use Locking", true);
+    mEigMgr = rcp(new Anasazi::BlockDavidsonSolMgr<Scalar, MV, OP>(mEigProb, anasaziPList));
+  } else {
+    std::cout << "Unsupported eigensolver type: " << type << "\n";
+    exit(EXIT_FAILURE);
   //mEigMgr = rcp(new Anasazi::BlockKrylovSchurSolMgr<double, MV, OP>(mEigProb, anasaziPList));
+  }
 
 }
 
 
 template<size_t DIM, typename Scalar>
 void MxSolver<DIM, Scalar>::solve() {
+  
+  Epetra_Time timer(*sim->getGrid().getComm()->getEpetraComm());
   Anasazi::ReturnType returnCode = mEigMgr->solve();
   if (returnCode != Anasazi::Converged && myPID==0) {
     std::cout << "Anasazi::EigensolverMgr::solve() \
                   returned unconverged." << std::endl;
   }
+  if (myPID == 0) {
+    std::cout << "\n\n"
+              << "---------------------------\n"
+              << " Eigensolve time: " << timer.ElapsedTime() << " seconds\n"
+              << "---------------------------\n\n";
+  }
+
 
 #if 1
   Anasazi::Eigensolution<Scalar, MV> sol = mEigProb->getSolution();
@@ -144,8 +167,8 @@ void MxSolver<DIM, Scalar>::solve() {
     freqsRe.push_back(mEigFreqs[i].real());
     freqsIm.push_back(mEigFreqs[i].imag());
   }
-  MxUtil::HDF5::saveArray(&freqsRe[0], freqsRe.size(), "mxEigenFreqsReal.h5");
-  MxUtil::HDF5::saveArray(&freqsIm[0], freqsIm.size(), "mxEigenFreqsImag.h5");
+  //MxUtil::HDF5::saveArray(&freqsRe[0], freqsRe.size(), "mxEigenFreqsReal.h5");
+  //MxUtil::HDF5::saveArray(&freqsIm[0], freqsIm.size(), "mxEigenFreqsImag.h5");
 
   // get/save magnetic and electric fields
   mEEigVecs = Teuchos::rcp(new MxMultiVector<Scalar>(

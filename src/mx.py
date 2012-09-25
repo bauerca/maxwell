@@ -423,8 +423,8 @@ class ShapeMirror(Shape):
     self.shape = shape
 
   def _get_attrs(self):
-    attrs = [("normal", list(self.normal)),
-             ("point in plane", list(self.pointInPlane))]
+    attrs = [("normal", list(self.n)),
+             ("point in plane", list(self.p))]
     return attrs + super(ShapeMirror, self)._get_attrs()
 
   def _get_children(self):
@@ -756,10 +756,10 @@ class Solution:
       load(self, dir)
 
     self._fieldPrefixes = {}
-    self._fieldPrefixes['E'] = "mxYeeElecField"
-    self._fieldPrefixes['B'] = "mxYeeMagField"
-    self._fieldPrefixes['D'] = "mxYeeDispField"
-    self._fieldPrefixes['H'] = "mxYeeFluxField"
+    self._fieldPrefixes['E'] = "mxYeeFitEField"
+    self._fieldPrefixes['B'] = "mxYeeFitBField"
+    self._fieldPrefixes['D'] = "mxYeeFitDField"
+    self._fieldPrefixes['H'] = "mxYeeFitHField"
 
     self._compLocs = {}
     self._compLocs['E'] = numpy.array([[0.5, 0.0, 0.0], [0.0, 0.5, 0.0], [0.0, 0.0, 0.5]])
@@ -776,8 +776,8 @@ class Solution:
   def loadEigenmode(self, type, modename, dir):
     fieldPrefix = self._fieldPrefixes[type]
     if not self.eigmodes[type].has_key(modename):
-      h5 = tables.openFile(dir + fieldPrefix + "_eigenvectors_" + modename + ".h5", "r")
-      self.eigmodes[type][modename] = h5.root.data.read()
+      h5 = tables.openFile(dir + "/" + fieldPrefix + "_eigVecs_" + modename + ".h5", "r")
+      self.eigmodes[type][modename] = h5.root.real.read()
       h5.close() 
     else:
       pass
@@ -849,14 +849,15 @@ class Solution:
     return map(lambda x: self._eigFieldValue(type, modename, pt, x), range(3))
 
   def eigFieldValues(self, type, modename, pts, ptsName = None, saveDir = None):
-    if saveDir[-1] != "/":
-      saveDir += "/"
+    if saveDir != None:
+      if saveDir[-1] != "/":
+        saveDir += "/"
 
     res = []
     # if user supplies name and directory, search for existing data first. Existing
     # data must have the same dimensions of 'pts'
-    filepath = saveDir + self._fieldPrefixes[type] + "_" + ptsName + "_eigenvectors_" + modename + ".h5"
     if saveDir != None and ptsName != None and havePyTables:
+      filepath = saveDir + self._fieldPrefixes[type] + "_" + ptsName + "_eigVecs_" + modename + ".h5"
       if os.path.exists(filepath):
         h5 = tables.openFile(filepath, 'r')
         data = h5.root.data.read()

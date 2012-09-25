@@ -56,6 +56,8 @@ class MxCrsMatrix {
 
     void save(std::string name) const;
 
+    void purgeZeros();
+
     /**
      *  FillComplete should have been called first
      */

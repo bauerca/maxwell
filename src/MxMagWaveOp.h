@@ -123,6 +123,9 @@ public Anasazi::Operator<Scalar> {
     mutable int mNumScaLinIters;
     mutable int mNumApplies;
 
+    mutable double mVecCumSolveTime;
+    mutable double mScaCumSolveTime;
+
     Teuchos::RCP<MxEMSimHierarchy<DIM> > simHier;
 
     RCP<AztecOO> mVecLaplSolver;
@@ -149,11 +152,20 @@ public Anasazi::Operator<Scalar> {
 
     RCP<MxMultiVector<Scalar> > mVecNullspace, mScaNullspace;
 
+    RCP<MxCrsMatrix<Scalar> > mNodeMatrix, mSMMatrix;
+
     void geoMGSetup();
 
     void amgSetup();
 
     void amgSetup(RCP<MxCrsMatrix<Scalar> > const & matrix,
+        MxGridField<DIM> const & field,
+        RCP<AztecOO> const & solver,
+        RCP<Epetra_Operator> & prec,
+        RCP<MxMultiVector<Scalar> > & nullspace,
+        RCP<MxMultiVector<double> > & coords);
+
+    void amgSetupRefMaxwell(RCP<MxCrsMatrix<Scalar> > const & matrix,
         MxGridField<DIM> const & field,
         RCP<AztecOO> const & solver,
         RCP<Epetra_Operator> & prec,

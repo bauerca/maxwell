@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8)
 include(ExternalProject)
 
 option(MAXWELL_USE_MPI "Set to ON to use mpi compilers. Must set PATH variable
-  'MpiBaseDir' as well unless it is equal to /usr/local" OFF)
+  'MAXWELL_MPI_BASE_DIR' as well unless it is equal to /usr/local" OFF)
 set(MAXWELL_MPI_BASE_DIR "/usr/local" CACHE PATH "Location of mpi directories.
   Defaults to /usr/local")
 
@@ -24,6 +24,12 @@ if(${MAXWELL_USE_MPI})
   set(CMAKE_CXX_COMPILER ${MAXWELL_MPI_BASE_DIR}/bin/mpicxx)
   set(CMAKE_C_COMPILER ${MAXWELL_MPI_BASE_DIR}/bin/mpicc)
 endif(${MAXWELL_USE_MPI})
+
+
+option(MAXWELL_USE_ParMETIS "Path to lib and include directories
+  for ParMETIS. ParMETIS is used for load balancing." OFF)
+set(MAXWELL_ParMETIS_BASE_DIR "/usr/local" CACHE PATH "Location of
+  ParMETIS directories. Defaults to /usr/local")
 
 
 # build trilinos using cmake ExternalProject module
@@ -64,6 +70,9 @@ set(MxTrilinosLinkLibs
   amesos
   komplex
   tpetra
+  kokkos
+  kokkosnodeapi
+  tpi
   epetraext
   epetra
   zoltan
@@ -78,11 +87,20 @@ if(${MAXWELL_USE_MPI})
     -DTPL_ENABLE_MPI:BOOL=ON
     -DMPI_BASE_DIR:PATH=${MAXWELL_MPI_BASE_DIR}
   )
+  if(${MAXWELL_USE_ParMETIS})
+    set(MxTrilinosFlags ${MxTrilinosFlags}
+      -DTPL_ENABLE_ParMETIS:BOOL=ON
+      -DTPL_ParMETIS_LIBRARIES:PATH=${MAXWELL_ParMETIS_BASE_DIR}/lib/libparmetis.a:${MAXWELL_ParMETIS_BASE_DIR}/lib/metis.a
+      -DTPL_ParMETIS_INCLUDE_DIRS:PATH=${MAXWELL_ParMETIS_BASE_DIR}/include
+      #-DParMETIS_LIBRARY_DIRS:PATH=${MAXWELL_ParMETIS_BASE_DIR}/lib
+    )
+  endif(${MAXWELL_USE_ParMETIS})
 endif(${MAXWELL_USE_MPI})
 
 ExternalProject_Add(MxTrilinos
   PREFIX extproj/trilinos
-  URL "http://trilinos.sandia.gov/download/files/trilinos-10.8.5-Source.tar.gz"
+  #URL "http://trilinos.sandia.gov/download/files/trilinos-10.8.5-Source.tar.gz"
+  URL "http://trilinos.sandia.gov/download/files/trilinos-10.12.1-Source.tar.gz"
   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
     ${MxTrilinosFlags} 
   #PATCH_COMMAND patch -p4 -t -N < ${CMAKE_SOURCE_DIR}/patch/klp.patch

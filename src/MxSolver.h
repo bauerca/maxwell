@@ -12,6 +12,7 @@
 #include "AnasaziOperator.hpp"
 #include "AnasaziMultiVec.hpp"
 #include "AnasaziBasicEigenproblem.hpp"
+#include "AnasaziSolverManager.hpp"
 #include "AnasaziBlockKrylovSchurSolMgr.hpp"
 
 class Epetra_Operator;
@@ -59,7 +60,7 @@ class MxSolver {
     RCP<Anasazi::BasicEigenproblem<Scalar, MV, OP> > mEigProb;
     //RCP<Anasazi::BasicEigenproblem<double, MV, OP> > mEigProb; // for epetra interface
 
-    RCP<Anasazi::BlockKrylovSchurSolMgr<Scalar, MV, OP> > mEigMgr;
+    RCP<Anasazi::SolverManager<Scalar, MV, OP> > mEigMgr;
     //RCP<Anasazi::BlockKrylovSchurSolMgr<double, MV, OP> > mEigMgr; // for epetra
 
 };

@@ -1,7 +1,6 @@
 
 #include <cmath>
 #include <utility>
-#include <limits>
 
 #include "MxConvexPolyhedron.h"
 #include "MxUtil.hpp"
@@ -144,7 +143,8 @@ double MxConvexPolyhedron::volumeFraction(const MxShape<3> & aShape, const MxDim
 
   switch (myState) {
     case ON:
-      if (aShape.func(p) > MxUtil::dEps) res = 1;
+      //if (aShape.func(p) > MxUtil::dEps) res = 1;
+      if (MxUtil::sign(aShape.func(p)) == 1) res = 1;
       else res = 0;
       break;
     case IN:
@@ -199,6 +199,7 @@ const std::vector<MxDimVector<double, 3> *> & edgeX) const {
   std::vector<size_t>::iterator vertIndxIter, edgeIndxIter;
 
   size_t vertIndx1, vertIndx2;
+  int f1s, f2s;
 
   // loop over all faces
   for (size_t faceIndx = 0; faceIndx < numFaces; faceIndx++) {
@@ -207,8 +208,12 @@ const std::vector<MxDimVector<double, 3> *> & edgeX) const {
 
     //determine if any part of face is inside
     inside = false;
-    for (vertIndxIter = faceVertIndxs.begin(); vertIndxIter != faceVertIndxs.end(); vertIndxIter++)
-      if (fVals[*vertIndxIter] > 0) {inside = true; break;}
+    for (vertIndxIter = faceVertIndxs.begin(); vertIndxIter != faceVertIndxs.end(); vertIndxIter++) {
+      if (MxUtil::sign(fVals[*vertIndxIter]) == 1) {
+        inside = true;
+        break;
+      }
+    }
 
     // go to next face early if current face is completely outside shape
     if (not inside) continue;
@@ -241,17 +246,22 @@ const std::vector<MxDimVector<double, 3> *> & edgeX) const {
         vertIndx2 = edgeVertsLists[*edgeIndxIter][1];
         w1 = verts[vertIndx1];
         w2 = verts[vertIndx2];
+        f1s = MxUtil::sign(fVals[vertIndx1]);
+        f2s = MxUtil::sign(fVals[vertIndx2]);
 
         //std::cout << edgeX[*edgeIndxIter] << std::endl;
         // if edge is cut and different
+        // edge is cut if cut or if node is on boundary and other node is inside
         if ((edgeX[*edgeIndxIter] != 0) && (edgeX[*edgeIndxIter] != v0)) {
           v1 = edgeX[*edgeIndxIter];
-          v2 = fVals[vertIndx1] > 0 ? &w1 : &w2;
+          //v2 = fVals[vertIndx1] > 0 ? &w1 : &w2;
+          v2 = f1s != -1 ? &w1 : &w2;
 
           faceCutLengths[faceIndx] = (*v0 - *v1).norm();
         }
         // if edge is not cut and inside
-        else if ((fVals[vertIndx1] > MxUtil::dEps) or (fVals[vertIndx2] > MxUtil::dEps)) {
+        //else if ((fVals[vertIndx1] > MxUtil::dEps) or (fVals[vertIndx2] > MxUtil::dEps)) {
+        else if (f1s == 1 or f2s == 1) {
           v1 = &w1;
           v2 = &w2;
         } 

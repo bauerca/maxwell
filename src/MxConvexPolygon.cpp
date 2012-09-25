@@ -1,6 +1,5 @@
 
 #include <cmath>
-#include <limits>
 
 #include "MxConvexPolygon.h"
 #include "MxUtil.hpp"
@@ -42,24 +41,31 @@ const std::vector<MxDimVector<double, DIM> *> & edgeX) const {
   // remaining two vertices for the triangle. If the edge is intersected, then
   // the endpoint that is outside the shape is thrown away
   size_t vertIndx1, vertIndx2;
+  int f1s, f2s;
   for (size_t edgeIndx = 0; edgeIndx < this->numEdges; edgeIndx++) {
     vertIndx1 = this->edgeVertsLists[edgeIndx][0];
     vertIndx2 = this->edgeVertsLists[edgeIndx][1];
     w1 = verts[vertIndx1];
     w2 = verts[vertIndx2];
 
-    // if edge is cut and is not the cut edge we used for the first triange vertex,
+    f1s = MxUtil::sign(fVals[vertIndx1]);
+    f2s = MxUtil::sign(fVals[vertIndx2]);
+
+    // if edge is cut,
     // use endpoint inside shape and intersection point
     if (edgeX[edgeIndx] != 0) {
-      v1 = fVals[vertIndx1] > 0 ? &w1 : edgeX[edgeIndx];
-      v2 = fVals[vertIndx2] > 0 ? &w2 : edgeX[edgeIndx];
+      v1 = f1s != -1 ? &w1 : edgeX[edgeIndx];
+      v2 = f2s != -1 ? &w2 : edgeX[edgeIndx];
+      //v1 = fVals[vertIndx1] > 0 ? &w1 : edgeX[edgeIndx];
+      //v2 = fVals[vertIndx2] > 0 ? &w2 : edgeX[edgeIndx];
     }
     // if edge is inside use both edge endpoints
-    else if ((fVals[vertIndx1] > MxUtil::dEps) or (fVals[vertIndx2] > MxUtil::dEps)) {
+    //else if ((fVals[vertIndx1] > MxUtil::dEps) or (fVals[vertIndx2] > MxUtil::dEps)) {
+    else if (f1s == 1 or f2s == 1) {
       v1 = &w1;
       v2 = &w2;
     }
-    // if edge is outside, skip it!
+    // if edge is outside (or on?), skip it!
     else continue;
 
     // Add the area for this triangle
@@ -164,6 +170,12 @@ const std::vector<size_t> & edgeXInds,
 const std::vector<MxDimVector<double, 3> *> & edgeX) const {
   MxDimVector<double, 3> tmp;
 
+  //std::cout << "edgeXInds size=" << edgeXInds.size() << "\n";
+  //for (int i = 0; i < edgeXInds.size(); ++i) {
+  //  std::cout << "  edgeXInd " << i << ": " << edgeXInds[i] << "\n";
+  //  std::cout << "  edgeX " << i << ": " << *edgeX[edgeXInds[i]] << "\n";
+  //}
+
   std::vector<MxDimVector<double, 3> > edgeXNormals;
   tmp = aShape.gradFunc(*edgeX[edgeXInds[0]]);
   tmp /= tmp.norm();
@@ -178,7 +190,8 @@ const std::vector<MxDimVector<double, 3> *> & edgeX) const {
   // if angle is too large (should user define this angle?), find the 'corner' (could just
   // be a really curvy surface)
   //if (cosTheta < 1.0 / sqrt(2.0)) {
-  if (cosTheta < cos(0.9 * 0.5 * MxUtil::pi)) {
+  //if (cosTheta < cos(0.9 * 0.5 * MxUtil::pi)) {
+  if (false) {
     MxVecD3 polyNorm(cross(verts[1] - verts[0], verts[2] - verts[0]));
 
     std::cout << "n1 = "; edgeXNormals[0].print(); std::cout << "  at point: "; edgeX[edgeXInds[0]]->print();
@@ -256,7 +269,7 @@ double MxConvexPolygon<DIM>::volumeFraction(const MxShape<DIM> & aShape, const M
 
   switch (myState) {
     case ON:
-      if (aShape.func(p) > MxUtil::dEps) res = 1;
+      if (MxUtil::sign(aShape.func(p)) == 1) res = 1;
       else res = 0;
       break;
     case IN:

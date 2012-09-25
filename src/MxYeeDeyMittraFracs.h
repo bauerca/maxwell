@@ -11,7 +11,10 @@
 template<size_t DIM, typename Scalar>
 class MxYeeDeyMittraFracs : public MxOperator<DIM>, public MxCrsMatrix<Scalar> {
   public:
-    MxYeeDeyMittraFracs(const MxGridField<DIM> * aGridField, const MxGrid<DIM> * aGrid, bool getInverse = false, double aMinFrac = 0.0);
+    MxYeeDeyMittraFracs(const MxGridField<DIM> * aGridField,
+      const MxGrid<DIM> * aGrid, bool getInverse = false,
+      double aMinFrac = 0.0, bool randomize = false,
+      double randomScale = 1.0);
 
     virtual ~MxYeeDeyMittraFracs() {};
 
@@ -31,6 +34,10 @@ class MxYeeDeyMittraFracs : public MxOperator<DIM>, public MxCrsMatrix<Scalar> {
     double minFrac;
 
     bool inverse;
+
+    bool mRandomize;
+
+    double mRandomScale;
 
     const MxGridField<DIM> * field;
 

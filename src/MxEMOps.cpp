@@ -119,7 +119,7 @@ void MxEMOps<DIM, Scalar>::setSingleOps(RCP<MxEMSim<DIM> > sim) {
       //conditionDeyMittraVolumes(*dmVInv, *mOps.find("dmA")->second, sim);
       mOps.insert(std::make_pair("dmVInv", rcp(
         new MxYeeDeyMittraFracs<DIM, Scalar>(
-          &sim->getField("psifield"), &grid, true, 0.e-6))));
+          &sim->getField("psifield"), &grid, true, 0.e-6, false, 0.3))));
     }
   }
 

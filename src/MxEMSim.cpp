@@ -71,11 +71,6 @@ int MxEMSim<DIM>::setup() {
       pList.get("phase shifts", MxDimVector<double, DIM>(0.0));
 
   // setup fields
-  // Yee Electric field
-  fieldNames.push_back("efield");
-  MxYeeFitEField<DIM> * efield = new MxYeeFitEField<DIM>(grid, pol);
-  efield->setBCs(lower, upper);
-  fields.push_back(rcp(efield));
 
   // Yee magnetic field
   fieldNames.push_back("bfield");
@@ -83,6 +78,12 @@ int MxEMSim<DIM>::setup() {
   bfield->setDMFrac(mDMFrac);
   bfield->setBCs(lower, upper);
   fields.push_back(rcp(bfield));
+
+  // Yee Electric field
+  fieldNames.push_back("efield");
+  MxYeeFitEField<DIM> * efield = new MxYeeFitEField<DIM>(grid, bfield, pol);
+  efield->setBCs(lower, upper);
+  fields.push_back(rcp(efield));
 
   // Yee FIT electric displacement field
   if (this->hasDielectric() or this->hasPML()) {
