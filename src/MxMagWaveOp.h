@@ -15,7 +15,6 @@
 #include "Epetra_Operator.h"
 #include "Epetra_MultiVector.h"
 #include "Epetra_CrsMatrix.h"
-#include "Komplex_LinearProblem.h"
 #include "AztecOO.h"
 #include "ml_MultiLevelPreconditioner.h"
 #include "AnasaziOperator.hpp"

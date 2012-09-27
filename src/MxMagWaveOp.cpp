@@ -282,6 +282,8 @@ void MxMagWaveOp<DIM, Scalar>::initWorkVecs() {
 template<size_t DIM, typename Scalar>
 void MxMagWaveOp<DIM, Scalar>::setLinearSolvers() {
 
+  mBMap->getComm()->getEpetraComm()->Barrier();
+
   mVecLaplProb = rcp(new Epetra_LinearProblem(
       mShiftedVecLapl->getRawMatrix().get(), NULL, NULL));
   mVecLaplSolver = rcp(new AztecOO(*mVecLaplProb));
