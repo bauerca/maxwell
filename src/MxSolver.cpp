@@ -62,6 +62,7 @@ myPID(aSim->getGrid().getComm()->myPID()), sim(aSim), pList(aPList) {
   RCP<MxAnasaziMV<Scalar> > initVec =
     rcp(new MxAnasaziMV<Scalar>(sim->getField("bfield").getMap(), blockSize));
   initVec->random();
+  MxGridField<DIM>::zeroUnusedComponents(*initVec, sim->getField("bfield"));
   mInitVec = initVec;
 
   mEigProb = rcp(new Anasazi::BasicEigenproblem<Scalar, MV, OP>(op, mInitVec));
@@ -125,8 +126,19 @@ void MxSolver<DIM, Scalar>::solve() {
   for (int k = 0; k < sol.numVecs; k++)
     mEigVals[k] = MxComplex(sol.Evals[k].realpart, sol.Evals[k].imagpart);
 
-
-  //sim->getField("bfield").save(*eigVecs, "eigenvectors");
+#if 0
+  // Print norms, max values
+  std::vector<double> norms(sol.numVecs);
+  mBEigVecs->norm2(norms);
+  Scalar val;
+  MxDimVector<int, DIM> cell;
+  int comp;
+  std::cout << "\n\n========== Max Values ==========\n";
+  for (int i = 0; i < sol.numVecs; ++i) {
+    sim->getField("bfield").maxValueLocation(*mBEigVecs, i, cell, comp, val);
+  }
+  std::cout << "===========================\n\n";
+#endif
 
   // analyze
   RCP<MxMagWaveOp<DIM, Scalar> > mwOp = Teuchos::rcp_dynamic_cast<MxMagWaveOp<DIM, Scalar> >(op, true);

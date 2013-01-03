@@ -120,6 +120,7 @@ int MxEMSim<DIM>::setup() {
       if (pid == 0) std::cout << "  Setting PEC on " << fieldNames[i] << "...\n";
       // One guard cell. Set region.
       fields[i]->addShapeRep(*pec, "pec", 1, true);
+      std::cout << fields[i]->getName() << ": " << fields[i]->getMap()->getGlobalNumIndices() << "\n";
     }
   }
 

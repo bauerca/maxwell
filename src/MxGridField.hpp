@@ -76,6 +76,14 @@ class MxGridField {
     //virtual void setRegion(size_t shapeIndx);
     virtual void setRegion(std::string shapeName);
 
+    virtual bool isRegionSet() {
+      return this->regionSet;
+    }
+
+    virtual std::string getRegion() {
+      return this->regionName;
+    }
+
     virtual void setCompBCs(size_t comp,
       MxDimVector<MxBCType, DIM> lowerBCs,
       MxDimVector<MxBCType, DIM> upperBCs);
@@ -183,6 +191,12 @@ class MxGridField {
     template<typename Scalar>
     static RCP<MxMultiVector<Scalar> > uniformFields(
       MxGridField<DIM> const & field);
+
+    template<typename Scalar>
+    void maxValueLocation(MxMultiVector<Scalar> const & data, int vec, MxDimVector<int, DIM> & outCell, int & outComp, Scalar & outValue) const;
+
+    template<typename Scalar>
+    static void zeroUnusedComponents(MxMultiVector<Scalar> & data, MxGridField<DIM> const & field);
 
     virtual RCP<MxMultiVector<double> > coords() const;
 

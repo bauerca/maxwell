@@ -162,7 +162,7 @@ public Anasazi::Operator<Scalar> {
         RCP<AztecOO> const & solver,
         RCP<Epetra_Operator> & prec,
         RCP<MxMultiVector<Scalar> > & nullspace,
-        RCP<MxMultiVector<double> > & coords);
+        RCP<MxMultiVector<double> > & coords, bool viz);
 
     void amgSetupRefMaxwell(RCP<MxCrsMatrix<Scalar> > const & matrix,
         MxGridField<DIM> const & field,

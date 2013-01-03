@@ -31,6 +31,8 @@ class MxGridFieldIter {
 
     inline int getGlobCompIndx() {return globMapInds[localIndx];}
 
+    inline int getLocalCompIndx() {return localIndx;}
+
     MxDimVector<double, DIM> getCoord();
 
     void print() const;

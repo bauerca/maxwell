@@ -191,6 +191,7 @@ void MxMagWaveOp<DIM, Scalar>::initMatrices() {
     mEMOps->addOps(names, scalars, true, "vecLapl");
     mVecLapl = mEMOps->getOp("vecLapl");
     mVecLapl->purgeZeros();
+    //mVecLapl->save("vecLaplStripped");
 
     // fill complete it store it
     //mVecLapl = mEMOps->addOps(names, scalars, true, "vecLapl");
@@ -216,7 +217,9 @@ void MxMagWaveOp<DIM, Scalar>::initMatrices() {
 
     mScaLapl = mEMOps->multiplyOps(names, std::vector<bool>(names.size(), false),
       true, true, "scaLapl");
+    mScaLapl->scale(-Teuchos::ScalarTraits<Scalar>::one());
       //true, false, "scaLapl");
+    mScaLapl->save("scaLapl");
   }
 
 
@@ -258,13 +261,13 @@ void MxMagWaveOp<DIM, Scalar>::setShift(Scalar shift) {
   if (ScalarTraits<Scalar>::isComplex)
     precShift = MxUtil::i<Scalar>() * shift;
   else
-    precShift = shift;
+    precShift = -shift;
 
   mPrecVecLapl = rcp(new MxCrsMatrix<Scalar>(mBMap));
   MxCrsMatrix<Scalar>::matrixMatrixAdd(*mVecLapl, false,
     ScalarTraits<Scalar>::one(), *mRhs, false, precShift,
     *mPrecVecLapl, true);
-  //mPrecVecLapl->save("precVecLapl");
+  mPrecVecLapl->save("precVecLapl");
   
   setLinearSolvers();
 }
@@ -393,12 +396,12 @@ void MxMagWaveOp<DIM, Scalar>::amgSetup() {
 #else
   // vector laplacian
   amgSetup(mPrecVecLapl, mSim->getField("bfield"), mVecLaplSolver,
-    mVecLaplPrec, mVecNullspace, mVecCoords);
+    mVecLaplPrec, mVecNullspace, mVecCoords, false);
 
   if (mHasCurlNull) {
     // scalar laplacian
     amgSetup(mScaLapl, mSim->getField("psifield"), mScaLaplSolver,
-      mScaLaplPrec, mScaNullspace, mScaCoords);
+      mScaLaplPrec, mScaNullspace, mScaCoords, false);
   }
 #endif
 }
@@ -410,7 +413,7 @@ MxGridField<DIM> const & field,
 RCP<AztecOO> const & solver,
 RCP<Epetra_Operator> & prec,
 RCP<MxMultiVector<Scalar> > & nullspace,
-RCP<MxMultiVector<double> > & coords) {
+RCP<MxMultiVector<double> > & coords, bool viz) {
   int amgSweeps = mPList.get("linear solver : amg : sweeps", 1);
   std::string amgSmootherType = mPList.get("linear solver : amg : smoother", "Chebyshev");
   std::string coarseSmootherType = mPList.get("linear solver : amg : coarse smoother", "Amesos-KLU");
@@ -432,7 +435,10 @@ RCP<MxMultiVector<double> > & coords) {
   mlList.set("prec type", "full-MGV");
   
   mlList.set("aggregation: type", "Uncoupled");
+  //mlList.set("aggregation: threshold", 1.e-4);
   //mlList.set("aggregation: type", "MIS");
+
+  //mlList.set("aggregation: damping factor", 0.0);
   
   //mlList.set("smoother: type", "Gauss-Seidel");
   mlList.set("smoother: type", amgSmootherType);
@@ -480,8 +486,13 @@ RCP<MxMultiVector<double> > & coords) {
     nsPtrZero = true;
   }
 
+
+#if 1
   if (ScalarTraits<Scalar>::isComplex and nullspace->getNumVecs() > 3)
-    mlList.set("PDE equations", 2);
+    mlList.set("PDE equations", 2*int(nullspace->getNumVecs()));
+  else
+    mlList.set("PDE equations", int(nullspace->getNumVecs()));
+#endif
   mlList.set("null space: type", "pre-computed");
   mlList.set("null space: vectors", nullspaceView);
   mlList.set("null space: dimension", int(nullspace->getNumVecs()));
@@ -499,6 +510,9 @@ RCP<MxMultiVector<double> > & coords) {
   if (DIM > 1) mlList.set("y-coordinates", (*coords->getRawMV())[1]);
   if (DIM > 2) mlList.set("z-coordinates", (*coords->getRawMV())[2]);
 
+  //if (nullspace->getNumVecs() > 1) {
+  mlList.set("viz: enable", viz);
+  mlList.set("viz: output format", "xyz");
 
   //mlList.set("max levels", 2);
   //mlList.set("coarse: type", "Chebyshev");
@@ -507,8 +521,13 @@ RCP<MxMultiVector<double> > & coords) {
   // forming multigrid preconditioner based on whole input matrix
   // There is some evidence that preconditioning on only the diagonal
   // blocks for complex-equivalent real matrices is better.
-  prec = rcp(new ML_Epetra::MultiLevelPreconditioner(
-    *matrix->getRawMatrix(), mlList));
+  ML_Epetra::MultiLevelPreconditioner * lprec =
+      new ML_Epetra::MultiLevelPreconditioner(*matrix->getRawMatrix(), mlList);
+  //lprec->AnalyzeHierarchy(true, 0, 0, 1);
+  //lprec->Print(1);
+  prec = rcp(lprec);
+  //prec = rcp(new ML_Epetra::MultiLevelPreconditioner(
+  //  *matrix->getRawMatrix(), mlList));
   solver->SetPrecOperator(prec.get());
 
   //if (nsPtrZero) {
@@ -842,7 +861,9 @@ Anasazi::MultiVec<Scalar> & y) const {
 #endif
 
   if (invert) {
+    //std::cout << "x(0,0): " << x2(0,0) << "\n";
     mRhs->apply(x2, y2);
+    //std::cout << "mRhs*x(0,0): " << y2(0,0) << "\n";
 
     // vec lapl solver is epetra-based
     mVecLaplSolver->SetRHS(y2.getRawMV().get());
@@ -867,6 +888,7 @@ Anasazi::MultiVec<Scalar> & y) const {
       std::cout << "True residual of vector Laplacian solve: " << trueRes << "\n";
       std::cout << "vector Laplacian solve time: " << time.ElapsedTime() << "\n";
     }
+    //std::cout << "L^-1*mRhs*x(0,0): " << (*bWork1)(0,0) << "\n";
 
     if (mHasCurlNull) {
       // now do projection
@@ -897,12 +919,13 @@ Anasazi::MultiVec<Scalar> & y) const {
       mEMOps->getOp("gradPsi")->apply(*psiWork2, y2);
 
       y2.update(ScalarTraits<Scalar>::one(), *bWork1,
-          -ScalarTraits<Scalar>::one());
+          ScalarTraits<Scalar>::one());
+      //std::cout << "proj*L^-1*mRhs*x(0,0): " << y2(0,0) << "\n";
     }
     else {
       y2 = *bWork1;
-      if (pid == 0) std::cout << "Get here?\n";
     }
+    //MxGridField<DIM>::zeroUnusedComponents(y2, mSim->getField("bfield"));
   }
   // else if no inversion
   else {

@@ -55,6 +55,11 @@ void MxYeeDeyMittraGradPsi<DIM, Scalar>::setMatrix() {
     for (fieldIter.begin(); !fieldIter.atEnd(); fieldIter.bump()) {
       cell = fieldIter.getCell();
       comp = fieldIter.getComp();
+
+      if (bfield->getCompFactor(comp, cell) == ScalarTraits<MxComplex>::zero()) {
+        continue;
+      }
+
       row = bfield->globCompIndx(comp, cell);
 
       cols[0] = psifield->globCompIndx(0, cell);

@@ -452,10 +452,18 @@ MxGridField<DIM> const & field) {
 
   size_t comp;
   MxIndex row;
+  MxDimVector<int, DIM> cell;
   Scalar val;
   for (iter.begin(); !iter.atEnd(); iter.bump()) {
     comp = iter.getComp();
     row = iter.getGlobCompIndx();
+    cell = iter.getCell();
+    if (field.regionSet) {
+      if (field.getCompFrac(comp, cell, field.regionName) == 0.0) {
+        continue;
+      }
+    }
+
     if (ScalarTraits<Scalar>::isComplex) {
       res->replaceGlobalValue(row, 2 * comp, ScalarTraits<Scalar>::one());
       res->replaceGlobalValue(row, 2 * comp + 1, MxUtil::i<Scalar>());
@@ -480,6 +488,105 @@ template RCP<MxMultiVector<MxComplex> > MxGridField<2>::uniformFields<MxComplex>
 MxGridField<2> const & field);
 template RCP<MxMultiVector<MxComplex> > MxGridField<3>::uniformFields<MxComplex>(
 MxGridField<3> const & field);
+
+template<size_t DIM>
+template<typename Scalar>
+void MxGridField<DIM>::maxValueLocation(MxMultiVector<Scalar> const & data,
+int vec,
+MxDimVector<int, DIM> & outCell, int & outComp, Scalar & outValue) const {
+  
+  MxGridFieldIter<DIM> iter(this);
+
+  outValue = Teuchos::ScalarTraits<Scalar>::zero();
+  Scalar val = Teuchos::ScalarTraits<Scalar>::zero();
+
+  MxIndex row;
+  MxDimVector<int, DIM> cell;
+  double frac0 = 1;
+  double frac1 = 1;
+  int count = 0;
+  for (iter.begin(); !iter.atEnd(); iter.bump()) {
+    val = data(iter.getLocalCompIndx(), vec);
+    if (abs(val) > abs(outValue)) {
+      outValue = val;
+      outCell = iter.getCell();
+      outComp = iter.getComp();
+      if (this->regionSet) {
+        frac0 = this->getCompFrac(outComp, outCell, this->regionName);
+        frac1 = this->getCompFrac((outComp + 1) % this->getNumComps(), outCell, this->regionName);
+      }
+    }
+  }
+
+  std::cout << "val=" << outValue << ", comp=" << outComp << ", cell="
+      << outCell;
+  std::cout << "  comp="<<outComp<<", frac=" << frac0 << "\n";
+  std::cout << "  comp="<<((outComp+1)%this->getNumComps())<<", frac=" << frac1 << "\n";
+}
+
+template void MxGridField<1>::maxValueLocation<double>(
+MxMultiVector<double> const & data, int vec,
+MxDimVector<int, 1> & outCell, int & outComp, double & outValue) const;
+template void MxGridField<2>::maxValueLocation<double>(
+MxMultiVector<double> const & data, int vec,
+MxDimVector<int, 2> & outCell, int & outComp, double & outValue) const;
+template void MxGridField<3>::maxValueLocation<double>(
+MxMultiVector<double> const & data, int vec,
+MxDimVector<int, 3> & outCell, int & outComp, double & outValue) const;
+template void MxGridField<1>::maxValueLocation<MxComplex>(
+MxMultiVector<MxComplex> const & data, int vec,
+MxDimVector<int, 1> & outCell, int & outComp, MxComplex & outValue) const;
+template void MxGridField<2>::maxValueLocation<MxComplex>(
+MxMultiVector<MxComplex> const & data, int vec,
+MxDimVector<int, 2> & outCell, int & outComp, MxComplex & outValue) const;
+template void MxGridField<3>::maxValueLocation<MxComplex>(
+MxMultiVector<MxComplex> const & data, int vec,
+MxDimVector<int, 3> & outCell, int & outComp, MxComplex & outValue) const;
+
+template<size_t DIM>
+template<typename Scalar>
+void MxGridField<DIM>::zeroUnusedComponents(MxMultiVector<Scalar> & mv,
+MxGridField<DIM> const & field) {
+  if (!field.regionSet) {
+    return;
+  }
+
+  MxGridFieldIter<DIM> iter(&field);
+
+  size_t comp;
+  MxIndex row;
+  Scalar val;
+  MxDimVector<int, DIM> cell;
+  int count = 0;
+  for (iter.begin(); !iter.atEnd(); iter.bump()) {
+    comp = iter.getComp();
+    cell = iter.getCell();
+    row = iter.getGlobCompIndx();
+
+    if (field.getCompFrac(comp, cell, field.regionName) == 0.0) {
+      count++;
+      for (int i = 0; i < mv.getNumVecs(); ++i) {
+        //std::cout << "zeroing\n";
+        mv.replaceGlobalValue(row, i, ScalarTraits<Scalar>::zero());
+      }
+    }
+  }
+
+  std::cout << count << " components zeroed\n";
+}
+
+template void MxGridField<1>::zeroUnusedComponents<double>(
+MxMultiVector<double> & mv, MxGridField<1> const & field);
+template void MxGridField<2>::zeroUnusedComponents<double>(
+MxMultiVector<double> & mv, MxGridField<2> const & field);
+template void MxGridField<3>::zeroUnusedComponents<double>(
+MxMultiVector<double> & mv, MxGridField<3> const & field);
+template void MxGridField<1>::zeroUnusedComponents<MxComplex>(
+MxMultiVector<MxComplex> & mv, MxGridField<1> const & field);
+template void MxGridField<2>::zeroUnusedComponents<MxComplex>(
+MxMultiVector<MxComplex> & mv, MxGridField<2> const & field);
+template void MxGridField<3>::zeroUnusedComponents<MxComplex>(
+MxMultiVector<MxComplex> & mv, MxGridField<3> const & field);
 
 template<size_t DIM>
 RCP<MxMultiVector<double> > MxGridField<DIM>::coords() const {

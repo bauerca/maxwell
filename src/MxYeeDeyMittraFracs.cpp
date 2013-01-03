@@ -54,8 +54,10 @@ void MxYeeDeyMittraFracs<DIM, Scalar>::setMatrix() {
     else
       numZeroFracs++;
 
-    MxUtil::convertScalar(val, mval);
-    MxCrsMatrix<Scalar>::insertRowValues(ind, 1, &ind, &mval);
+    //if (val != 0) {
+      MxUtil::convertScalar(val, mval);
+      MxCrsMatrix<Scalar>::insertRowValues(ind, 1, &ind, &mval);
+    //}
   }
 
   std::cout << "  min nonzero frac is: " << minNonzeroFrac << "\n";

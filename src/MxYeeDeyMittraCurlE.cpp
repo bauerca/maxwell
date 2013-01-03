@@ -82,6 +82,10 @@ void MxYeeDeyMittraCurlE<DIM, Scalar>::setMatrix2d() {
       comp0 = fieldIter.getComp(); // Bx : 0; By : 1
       comp1 = (comp0 + 1) % 2;
 
+      if (bfield->getCompFactor(comp0, cell) == Teuchos::ScalarTraits<MxComplex>::zero()) {
+        continue;
+      }
+
       row = bfield->globCompIndx(comp0, cell);
 
       cell[comp1]++;
@@ -140,6 +144,10 @@ void MxYeeDeyMittraCurlE<DIM, Scalar>::setMatrix3d() {
     comp0 = fieldIter.getComp();
     comp1 = (comp0 + 1) % 3;
     comp2 = (comp0 + 2) % 3;
+
+    if (bfield->getCompFactor(comp0, cell) == Teuchos::ScalarTraits<MxComplex>::zero()) {
+      continue;
+    }
 
     row = bfield->globCompIndx(comp0, cell);
 
