@@ -62,15 +62,11 @@ MxPolType polarization) : mDMFrac(0) {
 template<size_t DIM>
 bool MxYeeFitBField<DIM>::useCompInMap(size_t comp, MxDimVector<int, DIM> cell) const {
   
-#if 1
-  if (this->regionSet) {
-    for (int i = 0; i < this->getNumComps(); ++i) {
-      if (this->getCompFrac(i, cell, this->regionName) > 0.0) {
-        return true;
-      }
+  for (int i = 0; i < this->getNumComps(); ++i) {
+    if (MxGridField<DIM>::useCompInMap(i, cell)) {
+      return true;
     }
   }
-#endif
 
   bool res = MxYeeMagFieldBase<DIM>::useCompInMap(comp, cell);
 

@@ -15,7 +15,7 @@ class AContainer {
     AContainer() : count(0) {}
 
     ~AContainer() {
-      typename std::map<int, RCP<A> >::const_iterator iter;
+      std::map<int, RCP<A> >::const_iterator iter;
       for (iter = mMap.begin(); iter != mMap.end(); iter++)
         std::cout << iter->first << "\n"
             << "  strong: " << iter->second.strong_count() << "\n"

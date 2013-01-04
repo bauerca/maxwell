@@ -10,7 +10,7 @@ void MxAnasaziMV<double>::MvTimesMatAddMv(double alpha,
     const Teuchos::SerialDenseMatrix<int,double> & B, double beta) {
   //std::cout << "MvTimesMatAddMv called\n";
   Epetra_LocalMap LocalMap(
-      B.numRows(), 0, *this->getMap()->getComm()->getEpetraComm());
+      int(B.numRows()), 0, *this->getMap()->getComm()->getEpetraComm());
   Epetra_MultiVector B_Pvec(View, LocalMap, B.values(), B.stride(), B.numCols());
 
   MxAnasaziMV<double> *A_vec =
@@ -53,7 +53,7 @@ void MxAnasaziMV<MxComplex>::MvTimesMatAddMv(MxComplex alpha,
       imB(i, j) = B(i, j).imag();
     }
   }
-  Epetra_LocalMap lMap(numRows, 0, *getMap()->getComm()->getEpetraComm());
+  Epetra_LocalMap lMap(int(numRows), 0, *getMap()->getComm()->getEpetraComm());
   Epetra_MultiVector reBView(View, lMap, reB.values(), reB.stride(), numCols);
   Epetra_MultiVector imBView(View, lMap, imB.values(), imB.stride(), numCols);
 
@@ -117,7 +117,7 @@ void MxAnasaziMV<double>::MvTransMv(double alpha,
   //std::cout << "MvTransMv called\n";
   //std::cout << B.numRows() << "x" << B.numCols() << "\n";
   Epetra_LocalMap LocalMap(
-      B.numRows(), 0, *this->getMap()->getComm()->getEpetraComm());
+      int(B.numRows()), 0, *this->getMap()->getComm()->getEpetraComm());
   Epetra_MultiVector mvB(View, LocalMap, B.values(), B.stride(), B.numCols());
 
   MxAnasaziMV<double> *A_vec =
@@ -168,7 +168,7 @@ void MxAnasaziMV<MxComplex>::MvTransMv(MxComplex alpha,
       imB(i, j) = B(i, j).imag();
     }
   }
-  Epetra_LocalMap lMap(numRows, 0, *getMap()->getComm()->getEpetraComm());
+  Epetra_LocalMap lMap(int(numRows), 0, *getMap()->getComm()->getEpetraComm());
   Epetra_MultiVector reBView(View, lMap, reB.values(), reB.stride(), numCols);
   Epetra_MultiVector imBView(View, lMap, imB.values(), imB.stride(), numCols);
 
