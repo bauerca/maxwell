@@ -3,6 +3,10 @@ maxwell
 
 Distributed-memory parallel eigensolver for Maxwell's equations.
 
+See the following publications for an idea of what this software can do.
+
+- [A fast multigrid-based electromagnetic eigensolver for curved metal boundaries on the Yee mesh](http://carlbauer.org/static/pdf/dey-mittra-multigrid-solver.pdf)
+- [A second-order 3D electromagnetics algorithm for curved interfaces between anisotropic dielectrics on a Yee mesh](http://carlbauer.org/static/pdf/second-order-yee-dielectrics.pdf)
 
 
 LICENSE
