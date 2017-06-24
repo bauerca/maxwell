@@ -212,7 +212,7 @@ std::vector<std::string> MxUtil::Strings::lines(std::string const & str) {
 std::vector<std::string> MxUtil::Strings::split(std::string const & str, std::string sep) {
   std::vector<std::string> res;
   size_t pos1 = 0, pos2 = 0;
-  while (pos2 != string::npos) {
+  while (pos2 != std::string::npos) {
     pos2 = str.find(sep, pos1);
     res.push_back(str.substr(pos1, pos2 - pos1));
     pos1 = pos2 + sep.size();
