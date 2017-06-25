@@ -17,6 +17,8 @@
 #include "MxMap.hpp"
 #include "MxCrsMatrix.hpp"
 
+#include <sstream>
+
 typedef std::pair<std::string, std::string> MxStrPair;
 
 char listSpacers[] = {',', ' ', '[', ']', '{', '}'};
@@ -222,16 +224,26 @@ std::vector<std::string> MxUtil::Strings::split(std::string const & str, std::st
 
 // this function gathers all lines within an xml object block that are not contained within
 // a nested xml object block. Ignores blank lines.
-std::vector<std::string> MxUtil::XML::nodeLines(const ::Teuchos::XMLObject & node) {
-  std::vector<std::string> res;
-  std::vector<std::string> allLines = MxUtil::Strings::lines(node.toString());
+std::vector<std::string> MxUtil::XML::nodeLines(
+    const ::Teuchos::XMLObject& node) {
+  std::vector<std::string> allLines;
+  /*
+  std::cout << "node = " << node.toString() << std::endl;
+  allLines = MxUtil::Strings::lines(node.toString());
+  */
+  std::stringstream ss;
+  ss << node;
+  allLines = MxUtil::Strings::lines(ss.str());
   size_t numTotLines = allLines.size();
+  // std::cout << numTotLines << " total lines:" << std::endl;
   std::string line;
+// Collect top level lines
   int numNodesOpen = 0;
+  std::vector<std::string> res;
   bool blank;
-
   for (int i = 0; i < numTotLines; ++i) {
     line = allLines[i];
+    // std::cout << line << std::endl;
     blank = line.find_first_not_of(" ") == std::string::npos;
 
     if (line.find("</") != std::string::npos)
@@ -243,8 +255,9 @@ std::vector<std::string> MxUtil::XML::nodeLines(const ::Teuchos::XMLObject & nod
     else
       continue;
   }
+  // std::cout << std::endl;
 
-  //MxUtil::printStdVector(res);
+  MxUtil::printStdVector(res);
 
   return res;
 }
@@ -253,8 +266,10 @@ std::vector<std::string> MxUtil::XML::nodeLines(const ::Teuchos::XMLObject & nod
 std::string MxUtil::XML::getAttr(std::string name, const ::Teuchos::XMLObject & node, std::string dfault) {
   std::string resB, resT;
 
-  if (node.isEmpty())
+  if (node.isEmpty()) {
+    std::cout << "Node is empty." << std::endl;
     return dfault;
+  }
 
   resB = MxUtil::XML::getBodyAttr(name, node);
   resT = MxUtil::XML::getTagAttr(name, node);
@@ -272,7 +287,7 @@ std::string MxUtil::XML::getAttr(std::string name, const ::Teuchos::XMLObject & 
     std::cout << "MxUtil::XML::getAttr(...): attribute, '" << name << "', is required to exist in the following XML block:\n";
     node.print(std::cout, 1);
     exit(0);
-  } 
+  }
   else
     return s;
 }
@@ -283,8 +298,9 @@ std::string MxUtil::XML::getBodyAttr(std::string name, const ::Teuchos::XMLObjec
 
   std::vector<std::string>::const_iterator iter;
   for (iter = lines.begin(); iter != lines.end(); ++iter) {
+    // std::cout << *iter << std::endl;
     eq = MxUtil::Strings::splitEquation(*iter);
-    //std::cout << "eq.first: " << eq.first << "   eq.second: " << eq.second << "\n";
+    // std::cout << "eq.first: " << eq.first << "   eq.second: " << eq.second << "\n";
     if (eq.first == name)
       return eq.second;
   }
