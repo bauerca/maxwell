@@ -67,7 +67,7 @@ def main():
   bgnyz = -endyz
   lenyz = endyz - bgnyz
   dl = resolution*fiberRadius
-  yzcells_half = int(endyz/(resolution*wavelen))
+  yzcells_half = int(endyz/dl)
   yzcells = 2*yzcells_half
   xcells = 2
   lenx = xcells*dl
@@ -104,7 +104,8 @@ def main():
 # create new eigensolver object
   eig = mx.Eigensolver()
   eig.setParams({"nev": 10, "basis": 30})
-  lin = mx.LinearSolver(prec = "amg")
+  prec = mx.AMG()
+  lin = mx.LinearSolver(prec = prec)
 # lin.setParams({"sweeps": 2, "type": "gmres",
   # "prec type": "amg",
   # "smoother": "Chebyshev",
@@ -123,3 +124,4 @@ def main():
 if __name__ == '__main__':
   print("cylinder.py started.")
   main()
+
