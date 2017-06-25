@@ -37,7 +37,7 @@ def _files(dir, substrs):
     files = [file for file in files if s in file]
   files.sort()
   return files
-  
+
 
 def _indent(s, ntabs):
   lines = s.splitlines(True) # keep '\n' at ends
@@ -59,7 +59,7 @@ class Object(object):
     self.tag = str(tag)
     self.attrs = []
     self.children = []
-    
+
   def _get_attrs(self):
     return []
 
@@ -146,10 +146,10 @@ class PML(Object):
   def _get_children(self):
     children = [self.shape]
     return super(PML, self)._get_children() + children
-    
+
 
 def make_pml_box(lowerBounds, upperBounds, profileDir, increasing, alphaMax, exponent):
-  """This function returns a simple Cartesian box PML object. 
+  """This function returns a simple Cartesian box PML object.
 
   Parameters:
     lowerBounds : real-space coordinate (list of floats)
@@ -171,7 +171,7 @@ def make_pml_box(lowerBounds, upperBounds, profileDir, increasing, alphaMax, exp
 
   end = copy.deepcopy(zzz)
   end[dir] = upperBounds[dir]
-  
+
   if increasing:
     return PML(shape, alphaMax, exponent, begin, end)
   else:
@@ -381,7 +381,7 @@ class ShapeSubtract(Shape):
     super(ShapeSubtract, self).__init__("ShapeSubtract", name)
     self.base = base
     self.subtract = subtract
-    
+
   def setBase(self, shape):
     self.base = shape
 
@@ -396,7 +396,7 @@ class ShapeUnion(Shape):
   def __init__(self, shapes = [], name = "union"):
     super(ShapeUnion, self).__init__("ShapeUnion", name)
     self.shapes = shapes
-      
+
   def add(self, shape):
     self.shapes.append(shape);
 
@@ -407,7 +407,7 @@ class ShapeIntersection(Shape):
   def __init__(self, shapes = [], name = "intersection"):
     super(ShapeIntersection, self).__init__("ShapeIntersection", name)
     self.shapes = shapes
-      
+
   def add(self, shape):
     self.shapes.append(shape);
 
@@ -479,7 +479,7 @@ class BoundaryConditions(Object):
         print "Boundary condition, '" + bc + "', not a valid option.\n"
         sys.exit()
     self.uBCs = bcs
-  
+
   def setLowerBCs(self, bcs):
     for bc in bcs:
       if bc not in self.options:
@@ -532,7 +532,7 @@ class Output(Object):
 #          s += 3 * tab + "r%d = %s\n" % (p, str(list(point)))
 #          p += 1
 #        s += 2 * tab + "</Points>\n"
-#      s += "  </FieldValues>\n" 
+#      s += "  </FieldValues>\n"
 #    s += "</Output>\n"
 #    return _indent(s, ntabs)
 
@@ -706,7 +706,7 @@ class Simulation(Object):
     if self.pec:
       children += [self.pec]
 
-    children += self.diels + self.mus + self.pmls 
+    children += self.diels + self.mus + self.pmls
 
     if not self.solver.params.has_key("shift"):
       self.solver.params["shift"] = 0.05 * (2.0 * math.pi / max(self.grid.l))**2
@@ -718,7 +718,7 @@ class Simulation(Object):
     f = open(self.name + ".mx", 'w')
     f.write(str(self))
     f.close()
-    
+
 
 
 def h5tovtk(dir, pathToH5Utils = ""):
@@ -729,12 +729,12 @@ def h5tovtk(dir, pathToH5Utils = ""):
   #magfiles = [file for file in files if ("mxYeeMagField" in file and ".h5" in file)]
   elecfiles = _files(files, ["mxYeeElecField", ".h5"])
   magfiles = _files(files, ["mxYeeMagField", ".h5"])
-  
+
   elecfiles.sort()
   magfiles.sort()
 
   modes = len(elecfiles)
-  
+
   for i in range(modes):
     print "Mode %.2d:" % i
     for files in [elecfiles, magfiles]:
@@ -742,7 +742,7 @@ def h5tovtk(dir, pathToH5Utils = ""):
       vtkName = file.rstrip(".h5") + ".vtk"
       #evec = dir + "mxYeeElecField_eigenvectors_vec%.2d.vtk" % i
       print "  creating " + vtkName
-      cmd = pathToH5Utils + "h5tovtk -o " + vtkName 
+      cmd = pathToH5Utils + "h5tovtk -o " + vtkName
       cmd += " -t 0 " + file
       cmd += " -t 1 " + file
       cmd += " -t 2 " + file
@@ -778,7 +778,7 @@ class Solution:
     if not self.eigmodes[type].has_key(modename):
       h5 = tables.openFile(dir + "/" + fieldPrefix + "_eigVecs_" + modename + ".h5", "r")
       self.eigmodes[type][modename] = h5.root.real.read()
-      h5.close() 
+      h5.close()
     else:
       pass
 
@@ -830,8 +830,8 @@ class Solution:
       res += t * (1. - u) * v * eigmode[cell[0] + 1, cell[1], cell[2] + 1, comp]
       res += t * u * (1. - v) * eigmode[cell[0] + 1, cell[1] + 1, cell[2], comp]
       res += t * u * v * eigmode[cell[0] + 1, cell[1] + 1, cell[2] + 1, comp]
-      return res 
-    
+      return res
+
 
   def eigFieldValue(self, type, modename, pt):
     if self.grid == None:
@@ -876,7 +876,7 @@ class Solution:
       h5.close()
 
     return res
-      
+
   def eigToVtk(self, type, modename, pathToH5Utils = "", dir = "./"):
     files = []
     for comp in range(numpy.shape(self.eigmodes[type][modename])[-1]):
@@ -901,5 +901,5 @@ if __name__ == "__main__":
   sim.setGrid(Grid([16, 16, 16], [0, 0, 0], [1, 1, 1]))
   sim.addDielectric(diel)
   sim.write()
-  
+
   print diel._str(2)
