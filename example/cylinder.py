@@ -32,13 +32,6 @@ import mx
 # Should be able to get scipy.constants, but since not
 speed_of_light = 299792458.0
 
-"""
-
-
-"""
-
-
-
 #
 # Main
 #
@@ -111,7 +104,7 @@ def main():
 # create new eigensolver object
   eig = mx.Eigensolver()
   eig.setParams({"nev": 10, "basis": 30})
-  lin = mx.LinearSolver()
+  lin = mx.LinearSolver(prec = "amg")
 # lin.setParams({"sweeps": 2, "type": "gmres",
   # "prec type": "amg",
   # "smoother": "Chebyshev",
