@@ -10,6 +10,7 @@ Copyright &copy; 2017-2017, Tech-X Corporation, Boulder, CO.
 """
 
 # Most dependent to least
+import scipy
 import math
 import argparse
 import sys
@@ -28,57 +29,15 @@ for dr in [os.path.join(mytopdir, "share"), os.path.join(mytopdir, "bin"),
 # print(sys.path)
 import mx
 
+# Should be able to get scipy.constants, but since not
+speed_of_light = 299792458.0
+
 """
-baseName = "cylinder"
-dim = 3
-l = 1.0
-o = 0.0
-r = 16 #resolution in each direction
-
-# set the grid
-grid = mx.Grid(dim * [r], dim * [o], dim * [l])
-
-# boundary conditions
-bcs = mx.BoundaryConditions()
-bcs.setLowerBCs(['periodic', 'periodic', 'periodic'])
-bcs.setUpperBCs(['periodic', 'periodic', 'periodic'])
-factor = 0.0e-8
-bcs.setPhaseShifts([factor*math.pi/4., factor*math.pi/3., factor*math.pi])
-#bcs.setPhaseShifts([0, 0, factor*math.pi])
-
-sph = mx.Sphere(0.37, [l/2.,l/2.,l/2.])
-# mu = mx.Mu(sph, muDiag=[9.4, 9.4, 11.6], losstan=0.e-1)
-diel = mx.Dielectric(sph, epsDiag=[2.25, 2.25, 2.25])
-
-# setup simulation
-sim = mx.Simulation(baseName, dim)
-sim.setGrid(grid)
-sim.addDielectric(diel)
-sim.setBCs(bcs)
-
-# create new eigensolver object
-eig = mx.Eigensolver()
-eig.setParams({"nev": 10, "basis": 30})
-#eig.setParams({"nev": 20, "basis": 30, "shift": -2.0})
-
-lin = mx.LinearSolver()
-
-# lin.setParams({"sweeps": 2, "type": "gmres",
-  # "prec type": "amg",
-  # "smoother": "Chebyshev",
-  # "levels": 10, "basis": 20})
 
 
-eig.setLinearSolver(lin)
-sim.setSolver(eig)
-
-sim.write()
-mxwl = "../../builds/maxwell/ser/src/maxwell"
-exline = mxwl + " --infile=" + baseName + ".mx"
-print(exline)
-if os.path.isfile(mxwl):
-  os.system(exline)
 """
+
+
 
 #
 # Main
@@ -95,6 +54,78 @@ def main():
   parser.add_argument("-t", "--testing", help="test signal catching",
       action="store_true")
   (args, unkargs) = parser.parse_known_args()
+
+# Basic parameters from Zhu, Brown,
+# "Full-vectorial finite-difference analysis of microstructured optical fibers"
+# The calculation window is chosen to be the first quadrant of the fiber
+# cross section with a computation window size of 6um by 6 um.
+  fiberRadius = 3.e-6
+  refractionIndex = 1.45
+  n_eff = 1.438604 # Computed value
+  wavelen = 1.5e-6
+  relPermittivity = refractionIndex**2
+  vacWavelen = wavelen*refractionIndex
+  freq = speed_of_light/(wavelen/n_eff)
+  print("Vacuum wavelength = %g, frequency = %g"%(vacWavelen, freq))
+
+# Grid parameters
+  resolution = 0.05 # Number of cells per wavelength
+  endyz = 6.e-6
+  bgnyz = -endyz
+  lenyz = endyz - bgnyz
+  dl = resolution*fiberRadius
+  yzcells_half = int(endyz/(resolution*wavelen))
+  yzcells = 2*yzcells_half
+  xcells = 2
+  lenx = xcells*dl
+  print("%d cells in the x direction, %d cells in the y and z directions."%
+      (xcells, yzcells))
+# set the grid
+  dim = 3
+  grid = mx.Grid([xcells, yzcells, yzcells], [0., bgnyz, bgnyz],
+      [lenx, lenyz, lenyz])
+
+# boundary conditions
+  bcs = mx.BoundaryConditions()
+  bcs.setLowerBCs(['periodic', 'pec', 'pec'])
+  bcs.setUpperBCs(['periodic', 'pec', 'pec'])
+  kay = n_eff*2.*math.pi/vacWavelen
+  phaseShift = kay*lenx
+  bcs.setPhaseShifts([phaseShift, 0., 0.])
+  print("phase shift = %g."%(phaseShift))
+
+  cylLen = lenx + 4.*dl
+  cylStart = - 2.*dl
+  cyl = mx.Cylinder(fiberRadius, [1., 0., 0.], [cylStart, 0., 0.])
+# mu = mx.Mu(sph, muDiag=[9.4, 9.4, 11.6], losstan=0.e-1)
+  diel = mx.Dielectric(cyl, epsDiag=[relPermittivity, relPermittivity,
+      relPermittivity])
+
+# setup simulation
+  baseName = "cylinder" # Should come from args
+  sim = mx.Simulation(baseName, dim)
+  sim.setGrid(grid)
+  sim.addDielectric(diel)
+  sim.setBCs(bcs)
+
+# create new eigensolver object
+  eig = mx.Eigensolver()
+  eig.setParams({"nev": 10, "basis": 30})
+  lin = mx.LinearSolver()
+# lin.setParams({"sweeps": 2, "type": "gmres",
+  # "prec type": "amg",
+  # "smoother": "Chebyshev",
+  # "levels": 10, "basis": 20})
+  eig.setLinearSolver(lin)
+  sim.setSolver(eig)
+
+# Write input file and run simulation
+  sim.write()
+  mxwl = "../../builds/maxwell/ser/src/maxwell"
+  exline = mxwl + " --infile=" + baseName + ".mx"
+  print(exline)
+  if os.path.isfile(mxwl):
+    os.system(exline)
 
 if __name__ == '__main__':
   print("cylinder.py started.")
