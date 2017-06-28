@@ -11,9 +11,8 @@ See the following publications for an idea of what this software can do.
 EXAMPLE CONFIGURATION
 =====================
 
-::
-
-  '/opt/contrib-clangcxx11/cmake-3.8.1-ser/bin/cmake' \
+```
+'/opt/contrib-clangcxx11/cmake-3.8.1-ser/bin/cmake' \
     -DCMAKE_INSTALL_PREFIX:PATH=/opt/volatile-clangcxx11/maxwell-r19-ser \
     -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo \
     -DCMAKE_COLOR_MAKEFILE:BOOL=FALSE \
@@ -28,6 +27,7 @@ EXAMPLE CONFIGURATION
     -DUSE_PREBUILT_HDF5:BOOL=TRUE \
     -DHDF5_BASE_DIR:FILEPATH='/opt/contrib-clangcxx11/hdf5-1.8.18-ser' \
     /Users/userdir/projects/vorpalall/maxwell
+```
 
 LICENSE
 =======
