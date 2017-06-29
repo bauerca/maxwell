@@ -10,7 +10,7 @@ set(MAXWELL_MPI_BASE_DIR "/usr/local" CACHE PATH "Location of mpi directories.
 set(CMAKE_SYSTEM_PREFIX_PATH ${CMAKE_SYSTEM_PREFIX_PATH} /usr/local/mpi)
 
 
-if(${MAXWELL_USE_MPI})
+if(MAXWELL_USE_MPI)
   #set(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
   #set(CMAKE_C_COMPILER ${MPI_C_COMPILER})
   #message("cxx compiler: ${MPI_CXX_COMPILER}")
@@ -23,7 +23,7 @@ if(${MAXWELL_USE_MPI})
 
   set(CMAKE_CXX_COMPILER ${MAXWELL_MPI_BASE_DIR}/bin/mpicxx)
   set(CMAKE_C_COMPILER ${MAXWELL_MPI_BASE_DIR}/bin/mpicc)
-endif(${MAXWELL_USE_MPI})
+endif()
 
 
 option(MAXWELL_USE_ParMETIS "Path to lib and include directories
@@ -37,7 +37,8 @@ set(TRILINOS_BASE_DIR "/usr/local" CACHE PATH
   libraries will be downloaded and compiled for you.")
 #set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${MX_TRILINOS_BASE_DIR}/lib/cmake/Trilinos")
 
-find_package(Trilinos PATHS ${TRILINOS_BASE_DIR})
+message(STATUS "TRILINOS_BASE_DIR = ${TRILINOS_BASE_DIR}.")
+find_package(Trilinos PATHS ${TRILINOS_BASE_DIR} NO_DEFAULT_PATH)
 
 if(Trilinos_FOUND)
   message("  Trilinos was found!")
@@ -180,25 +181,23 @@ else(USE_PREBUILT_HDF5)
   set(MxH5LinkDirs "${CMAKE_BINARY_DIR}/extproj/hdf5/lib")
 endif(USE_PREBUILT_HDF5)
 
-##find_package(Trilinos PATHS /usr/local ${TRILINOS_DIRS})
-#find_package(Trilinos REQUIRED)
-#
 ## Echo trilinos build info just for fun
-#if(Trilinos_FOUND)
-#  message("\nFound Trilinos!  Here are the details: ")
-#  message("   Trilinos_DIR = ${Trilinos_DIR}")
-#  message("   Trilinos_VERSION = ${Trilinos_VERSION}")
-#  message("   Trilinos_PACKAGE_LIST = ${Trilinos_PACKAGE_LIST}")
-#  message("   Trilinos_LIBRARIES = ${Trilinos_LIBRARIES}")
-#  message("   Trilinos_INCLUDE_DIRS = ${Trilinos_INCLUDE_DIRS}")
-#  message("   Trilinos_LIBRARY_DIRS = ${Trilinos_LIBRARY_DIRS}")
-#  message("   Trilinos_TPL_LIST = ${Trilinos_TPL_LIST}")
-#  message("   Trilinos_TPL_INCLUDE_DIRS = ${Trilinos_TPL_INCLUDE_DIRS}")
-#  message("   Trilinos_TPL_LIBRARIES = ${Trilinos_TPL_LIBRARIES}")
-#  message("   Trilinos_TPL_LIBRARY_DIRS = ${Trilinos_TPL_LIBRARY_DIRS}")
-#  message("   Trilinos_BUILD_SHARED_LIBS = ${Trilinos_BUILD_SHARED_LIBS}")
-#  message("End of Trilinos details\n")
-#endif(Trilinos_FOUND)
+if(Trilinos_FOUND)
+  message("\nFound Trilinos!  Here are the details: ")
+  message("   Trilinos_DIR = ${Trilinos_DIR}")
+  message("   Trilinos_VERSION = ${Trilinos_VERSION}")
+  message("   Trilinos_PACKAGE_LIST = ${Trilinos_PACKAGE_LIST}")
+  message("   Trilinos_LIBRARIES = ${Trilinos_LIBRARIES}")
+  message("   Trilinos_INCLUDE_DIRS = ${Trilinos_INCLUDE_DIRS}")
+  message("   Trilinos_LIBRARY_DIRS = ${Trilinos_LIBRARY_DIRS}")
+  message("   Trilinos_TPL_LIST = ${Trilinos_TPL_LIST}")
+  message("   Trilinos_TPL_INCLUDE_DIRS = ${Trilinos_TPL_INCLUDE_DIRS}")
+  message("   Trilinos_TPL_LIBRARIES = ${Trilinos_TPL_LIBRARIES}")
+  message("   Trilinos_TPL_LIBRARY_DIRS = ${Trilinos_TPL_LIBRARY_DIRS}")
+  message("   Trilinos_BUILD_SHARED_LIBS = ${Trilinos_BUILD_SHARED_LIBS}")
+  message("End of Trilinos details\n")
+endif()
+
 #
 ## Make sure to use same compilers and flags as Trilinos
 #set(CMAKE_CXX_COMPILER ${Trilinos_CXX_COMPILER} )

@@ -10,6 +10,10 @@
 #include "MxYeeFitMu.h"
 #include "MxEikxOp.h"
 
+// For IO
+#include <EpetraExt_MatrixMatrix.h>
+#include <EpetraExt_RowMatrixOut.h>
+
 template<size_t DIM, typename Scalar>
 MxEMOps<DIM, Scalar>::MxEMOps(RCP<MxEMSim<DIM> > sim,
 bool initSingleOps) : 
@@ -68,7 +72,8 @@ void MxEMOps<DIM, Scalar>::setSingleOps(RCP<MxEMSim<DIM> > sim) {
     MxYeeFitInvEps<DIM, Scalar> * invEps =
         new MxYeeFitInvEps<DIM, Scalar>(sim);
 
-    //EpetraExt::RowMatrixToMatrixMarketFile("MxInvEps.dat", *invEps);
+    // EpetraExt::RowMatrixToMatrixMarketFile("MxInvEps.mm", *invEps);
+    invEps->save("MxInvEps");
 
     mOps.insert(std::make_pair("invEps", rcp(invEps)));
     if (hasCurlNull)

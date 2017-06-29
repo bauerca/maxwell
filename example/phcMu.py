@@ -37,14 +37,19 @@ eig.setParams({"nev": 10, "basis": 30})
 #eig.setParams({"nev": 20, "basis": 30, "shift": -2.0})
 
 lin = mx.LinearSolver()
+"""
 lin.setParams({"sweeps": 2, "type": "gmres",
   "prec type": "amg",
   "smoother": "Chebyshev",
   "levels": 10, "basis": 20})
+"""
 
 eig.setLinearSolver(lin)
 sim.setSolver(eig)
 
 sim.write()
-
-os.system("../build/src/maxwell --infile=" + baseName + ".mx")
+mxwl = "../../builds/maxwell/ser/src/maxwell"
+exline = mxwl + " --infile=" + baseName + ".mx"
+print(exline)
+if os.path.isfile(mxwl):
+  os.system(exline)

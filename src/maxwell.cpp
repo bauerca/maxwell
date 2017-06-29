@@ -1,5 +1,5 @@
 
-// This is for Epetra_ConfigDefs.h 
+// This is for Epetra_ConfigDefs.h
 //#define HAVE_CONFIG_H
 //
 //#include "MxConfig.h"
@@ -76,7 +76,13 @@ int main(int argc, char* argv[]) {
   Teuchos::XMLObject xmlObj(Teuchos::FileInputSource(inFile).getObject());
 
   // get simulation dimension
-  int dim = atoi(MxUtil::XML::getAttr("dim", xmlObj).c_str());
+  int dim = 0;
+  // std::cout << "xmlObject = " << xmlObj << std::endl;
+  try {
+    dim = atoi(MxUtil::XML::getAttr("dim", xmlObj).c_str());
+  } catch(std::exception e) {
+    std::cout << "xmlObject = " << xmlObj << std::endl;
+  }
   if (dim < 1 or dim > 3) {
     std::cout << "Simulation dimension invalid or not given, using 3D.\n";
     dim = 3;
@@ -90,7 +96,7 @@ int main(int argc, char* argv[]) {
   }
 
   // create problem
-  
+
   MxProblem<1> * prob1d;
   MxProblem<2> * prob2d;
   MxProblem<3> * prob3d;
@@ -173,14 +179,14 @@ int main(int argc, char* argv[]) {
   cny = cnx = 2 * (int(ceil(crabCavRad / crabDelta)) + padCells);
   cly = clx = double(cnx) * crabDelta;
   coy = cox = -0.5 * clx;
-  
+
   veci3 crabN; crabN[0] = cnx; crabN[1] = cny; crabN[2] = cnz;
   vecd3 crabL; crabL[0] = clx; crabL[1] = cly; crabL[2] = clz;
   vecd3 crabO; crabO[0] = cox; crabO[1] = coy; crabO[2] = coz;
   //crabN.print();
   //crabL.print();
   //crabO.print();
-  
+
   MxGrid<3> crabGrid(crabO, crabN, crabL, &myComm);
   crabGrid.print();
 
@@ -225,7 +231,7 @@ int main(int argc, char* argv[]) {
 #if 0
   double rodRad = 0.003175; // meters
   const int numRods = 24;
-  double rodx[numRods] = {0.0158406582694, 0.0551748491968, 0.0209567636489, 
+  double rodx[numRods] = {0.0158406582694, 0.0551748491968, 0.0209567636489,
                           0.0384658321918, 0.00792032913471, 0.0338604938991,
                           0.00477355412058, 0.00485955186622, -0.00792032913471,
                           -0.0213143552977, -0.0161832095283, -0.0336062803256,
@@ -233,7 +239,7 @@ int main(int argc, char* argv[]) {
                           -0.0384658321918, -0.00792032913471, -0.0338604938991,
                           -0.00477355412058, -0.00485955186622, 0.00792032913471,
                           0.0213143552977, 0.0161832095283, 0.0336062803256};
-  double rody[numRods] = {0.0, -0.00724351649877, 0.006587367621, 
+  double rody[numRods] = {0.0, -0.00724351649877, 0.006587367621,
                     0.0165969314144, 0.013718412474, 0.044161062805,
                     0.0214427735115, 0.041610853563, 0.013718412474,
                     0.0514045793038, 0.0148554058905, 0.0250139221487,

@@ -25,9 +25,9 @@ class AContainer {
     }
 
     void addA(bool bad) {
-      if (bad)
-        mMap.insert(std::make_pair(count, new A()));
-      else
+      // if (bad)
+        // mMap.insert(std::make_pair(count, new A()));
+      // else
         mMap.insert(std::make_pair(count, rcp(new A())));
       count++;
       //return a;
